@@ -1,12 +1,12 @@
 <!DOCTYPE html>
-<html lang="en" data-theme="dark">
+<html lang="en" data-theme="light">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>GPS — Field Operations</title>
 <link rel="icon" href="https://justingps.github.io/dpr/logo.png" type="image/png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Playfair+Display:wght@600;700&family=Source+Sans+3:wght@300;400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Serif+Display&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <style>
@@ -14,9 +14,9 @@
    DESIGN TOKENS — DARK & LIGHT
 ═══════════════════════════════════════════════ */
 :root {
-  --font-display: 'Playfair Display', Georgia, serif;
-  --font-body:    'Source Sans 3', sans-serif;
-  --font-mono:    'IBM Plex Mono', 'Courier New', monospace;
+  --font-display: 'DM Serif Display', Georgia, serif;
+  --font-body:    'DM Sans', sans-serif;
+  --font-mono:    'DM Mono', 'Courier New', monospace;
   --accent:    #e07b39;
   --accent-h:  #c96929;
   --accent2:   #3a7bd5;
@@ -643,8 +643,8 @@ option { background:var(--surface2); color:var(--text); }
   <!-- Theme toggle on login page -->
   <div class="login-theme-toggle">
     <div class="theme-toggle" id="login-theme-btn">
-      <div class="theme-opt theme-opt-dark active" data-t="dark"><i class="fas fa-moon"></i> Dark</div>
-      <div class="theme-opt theme-opt-light" data-t="light"><i class="fas fa-sun"></i> Light</div>
+      <div class="theme-opt theme-opt-dark" data-t="dark"><i class="fas fa-moon"></i> Dark</div>
+      <div class="theme-opt theme-opt-light active" data-t="light"><i class="fas fa-sun"></i> Light</div>
     </div>
   </div>
 
@@ -702,8 +702,8 @@ option { background:var(--surface2); color:var(--text); }
 
       <!-- Theme toggle in topbar -->
       <div class="theme-toggle" id="dash-theme-btn">
-        <div class="theme-opt theme-opt-dark active" data-t="dark"><i class="fas fa-moon"></i> Dark</div>
-        <div class="theme-opt theme-opt-light" data-t="light"><i class="fas fa-sun"></i> Light</div>
+        <div class="theme-opt theme-opt-dark" data-t="dark"><i class="fas fa-moon"></i> Dark</div>
+        <div class="theme-opt theme-opt-light active" data-t="light"><i class="fas fa-sun"></i> Light</div>
       </div>
 
       <button class="btn-logout" id="btn-logout"><i class="fas fa-right-from-bracket"></i> Logout</button>
@@ -998,10 +998,9 @@ option { background:var(--surface2); color:var(--text); }
 
 <script>
 /* ══════════════════════════════════════════════
-   THEME
+   THEME — default: light
 ══════════════════════════════════════════════ */
-let currentTheme = localStorage.getItem('gps-theme') || 'dark';
-// Apply theme to <html> immediately so no flash — no DOM access needed here
+let currentTheme = localStorage.getItem('gps-theme') || 'light';
 document.documentElement.setAttribute('data-theme', currentTheme);
 
 function applyTheme(t) {
@@ -1011,7 +1010,6 @@ function applyTheme(t) {
   document.querySelectorAll('.theme-opt').forEach(el => {
     el.classList.toggle('active', el.dataset.t === t);
   });
-  // Rebuild charts only when dashboard is visible and data is ready
   if (dataReady && document.getElementById('dashboard').style.display !== 'none') {
     updateChartDefaults();
     const active = document.querySelector('.nav-tab.active');
@@ -1039,13 +1037,12 @@ const palA = (i,a=0.82) => hexA(PALETTE[i%PALETTE.length],a);
 function hexA(hex,a){ const r=parseInt(hex.slice(1,3),16),g=parseInt(hex.slice(3,5),16),b=parseInt(hex.slice(5,7),16); return `rgba(${r},${g},${b},${a})`; }
 
 updateChartDefaults();
-Chart.defaults.font.family = "'IBM Plex Mono', monospace";
+Chart.defaults.font.family = "'DM Mono', monospace";
 Chart.defaults.font.size = 11;
 
 /* ══════════════════════════════════════════════
    AUTH
 ══════════════════════════════════════════════ */
-
 function doLogin() {
   const u = document.getElementById('u').value.trim();
   const p = document.getElementById('p').value.trim();
@@ -1073,7 +1070,7 @@ function doLogout() {
    BOOTSTRAP
 ══════════════════════════════════════════════ */
 document.addEventListener('DOMContentLoaded', () => {
-  // Sync theme toggles
+  // Sync theme toggles with current theme on load
   document.querySelectorAll('.theme-opt').forEach(el => {
     el.classList.toggle('active', el.dataset.t === currentTheme);
     el.addEventListener('click', () => applyTheme(el.dataset.t));
@@ -1098,12 +1095,17 @@ document.addEventListener('DOMContentLoaded', () => {
 
 function bootDashboard() {
   const today = new Date();
-  const yest  = offsetDate(today,-1);
-  const week  = offsetDate(yest,-13); // 2 weeks default
+  const yest  = offsetDate(today, -1);
+  // Analytics & KPI: default to past 7 days (6 days before yesterday → yesterday)
+  const weekStart = offsetDate(yest, -6);
 
-  setDateVal('r-date',  yest); setDateVal('st-date', yest); setDateVal('res-date',yest);
-  setDateVal('sum-start',week); setDateVal('sum-end',yest);
-  setDateVal('kpi-start',week); setDateVal('kpi-end',yest);
+  setDateVal('r-date',   yest);
+  setDateVal('st-date',  yest);
+  setDateVal('res-date', yest);
+  setDateVal('sum-start', weekStart);
+  setDateVal('sum-end',   yest);
+  setDateVal('kpi-start', weekStart);
+  setDateVal('kpi-end',   yest);
   document.getElementById('today-label').textContent = fmtDisplay(today);
 
   if (dataReady) { hideLoaders(); renderAll(); }
@@ -1299,11 +1301,10 @@ function renderKPI(){
   if(!start||!end||start>end) return;
   const days=dateRange(start,end);
 
-  // Aggregate per-day stats
   const dayStats={};
-  const foreStats={};  // id -> {name,wis:Set,crew:Set,days:Set}
-  const areaStats={};  // area -> {crew:Set, crewDays:0, days:Set}
-  const discStats={};  // disc -> crew count
+  const foreStats={};
+  const areaStats={};
+  const discStats={};
 
   DATA.forEach(row=>{
     const rd=parseRowDate(row.DATE); if(!rd) return;
@@ -1330,7 +1331,6 @@ function renderKPI(){
     if(res) discStats[disc].add(res);
   });
 
-  // Per-area daily sums for average
   days.forEach(d=>{
     const dk=toKey(d);
     Object.keys(areaStats).forEach(area=>{
@@ -1340,7 +1340,6 @@ function renderKPI(){
     });
   });
 
-  // Summary KPIs
   const totalCrew  = new Set(DATA.filter(r=>{const d=parseRowDate(r.DATE);return d&&toKey(d)>=toKey(start)&&toKey(d)<=toKey(end)&&r['RESOURCE ID'];}).map(r=>r['RESOURCE ID'])).size;
   const activeDays = Object.keys(dayStats).length;
   const totalProj  = new Set(DATA.filter(r=>{const d=parseRowDate(r.DATE);return d&&toKey(d)>=toKey(start)&&toKey(d)<=toKey(end);}).map(r=>`${r['FOREMAN ID']}|${r['WI NO']}`)).size;
@@ -1351,7 +1350,6 @@ function renderKPI(){
   const eqTotal    = Object.values(dayStats).reduce((s,d)=>s+d.eq,0);
   const mpRatio    = (mpTotal+eqTotal)>0 ? Math.round(mpTotal/(mpTotal+eqTotal)*100) : 0;
 
-  // KPI card definitions
   const kpiDefs=[
     { label:'Total Crew (Period)', value:totalCrew, icon:'fa-people-group', color:PALETTE[0], bg:'rgba(224,123,57,0.12)', sub:'' },
     { label:'Avg Crew per Day',    value:avgCrewDay, icon:'fa-chart-line', color:PALETTE[1], bg:'rgba(58,123,213,0.12)', sub:`Peak: ${maxCrewDay}` },
@@ -1370,7 +1368,6 @@ function renderKPI(){
       ${k.sub?`<div class="kpi-delta">${k.sub}</div>`:''}
     </div>`).join('');
 
-  // Chart: Daily productivity (crew count per day)
   const sortedDays=days.map(d=>({d,dk:toKey(d)})).filter(x=>dayStats[x.dk]);
   const prodLabels=sortedDays.map(x=>fmtDisplay(x.d));
   const prodData  =sortedDays.map(x=>dayStats[x.dk].crew.size);
@@ -1380,20 +1377,16 @@ function renderKPI(){
     {label:'Average',data:avgLine,type:'line',borderColor:PALETTE[1],borderWidth:2,pointRadius:0,fill:false,tension:0}
   ],{});
 
-  // Chart: Projects per foreman per day
   const pfData=sortedDays.map(x=>{ const d=dayStats[x.dk]; return d.foremen.size>0?(d.projects.size/d.foremen.size).toFixed(2):0; });
   mkChart('ch-pf','line',prodLabels,[{label:'Projects/Foreman',data:pfData,borderColor:PALETTE[2],backgroundColor:palA(2,0.1),borderWidth:2,pointRadius:3,tension:0.35,fill:true}],{});
 
-  // Chart: Area utilisation (avg daily crew)
   const areaNames=Object.keys(areaStats).sort((a,b)=>(areaStats[b].crewDaySum/Math.max(1,areaStats[b].dayCount))-(areaStats[a].crewDaySum/Math.max(1,areaStats[a].dayCount)));
   const areaAvgs=areaNames.map(a=>(areaStats[a].crewDaySum/Math.max(1,areaStats[a].dayCount)).toFixed(1));
   mkChart('ch-area-util','bar',areaNames,[{label:'Avg Daily Crew',data:areaAvgs,backgroundColor:areaNames.map((_,i)=>palA(i)),borderColor:areaNames.map((_,i)=>PALETTE[i%PALETTE.length]),borderWidth:1}],{horizontal:true,legendPos:'bottom'});
 
-  // Chart: Discipline share
   const discNames=Object.keys(discStats), discVals2=discNames.map(d=>discStats[d].size);
   mkDoughnut('ch-disc-share',discNames,discVals2,discNames.map((_,i)=>palA(i)));
 
-  // Area breakdown cards
   const maxAreaCrew=Math.max(...Object.values(areaStats).map(a=>a.crew.size),1);
   document.getElementById('kpi-area-rows').innerHTML=Object.entries(areaStats).sort((a,b)=>b[1].crew.size-a[1].crew.size).map(([area,s],i)=>{
     const avg=(s.crewDaySum/Math.max(1,s.dayCount)).toFixed(1);
@@ -1413,7 +1406,6 @@ function renderKPI(){
     </div>`;
   }).join('');
 
-  // Foreman ranking table
   const foreRanked=Object.values(foreStats).map(f=>({ ...f, avgCrew:(f.crew.size/Math.max(1,f.days.size)).toFixed(1) })).sort((a,b)=>b.crew.size-a.crew.size);
   document.getElementById('kpi-fore-badge').textContent=`${foreRanked.length} foremen`;
   document.getElementById('kpi-fore-body').innerHTML=foreRanked.map((f,i)=>`<tr>
@@ -1421,7 +1413,6 @@ function renderKPI(){
     <td>${f.wis.size}</td><td><strong>${f.crew.size}</strong></td>
     <td>${f.days.size}</td><td class="mono">${f.avgCrew}</td></tr>`).join('')||'<tr><td colspan="7" class="no-data">No data</td></tr>';
 
-  // Day breakdown table
   document.getElementById('kpi-day-badge').textContent=`${Object.keys(dayStats).length} days`;
   document.getElementById('kpi-day-body').innerHTML=Object.values(dayStats).sort((a,b)=>b.date-a.date).map(d=>`<tr>
     <td class="mono">${fmtDisplay(d.date)}</td>
@@ -1546,7 +1537,7 @@ function renderResource(){
 }
 
 /* ══════════════════════════════════════════════
-   TAB NAVIGATION (wired up in DOMContentLoaded)
+   TAB NAVIGATION
 ══════════════════════════════════════════════ */
 function triggerTabRender(t){
   if(t==='summary')  renderSummary();
