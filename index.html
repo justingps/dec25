@@ -1001,7 +1001,8 @@ option { background:var(--surface2); color:var(--text); }
    THEME
 ══════════════════════════════════════════════ */
 let currentTheme = localStorage.getItem('gps-theme') || 'dark';
-applyTheme(currentTheme);
+// Apply theme to <html> immediately so no flash — no DOM access needed here
+document.documentElement.setAttribute('data-theme', currentTheme);
 
 function applyTheme(t) {
   currentTheme = t;
@@ -1010,17 +1011,13 @@ function applyTheme(t) {
   document.querySelectorAll('.theme-opt').forEach(el => {
     el.classList.toggle('active', el.dataset.t === t);
   });
-  // Rebuild all charts in new theme colours
-  if (typeof charts !== 'undefined') {
+  // Rebuild charts only when dashboard is visible and data is ready
+  if (dataReady && document.getElementById('dashboard').style.display !== 'none') {
     updateChartDefaults();
     const active = document.querySelector('.nav-tab.active');
     if (active) triggerTabRender(active.dataset.tab);
   }
 }
-
-document.querySelectorAll('.theme-opt').forEach(el => {
-  el.addEventListener('click', () => applyTheme(el.dataset.t));
-});
 
 function updateChartDefaults() {
   const isDark = currentTheme === 'dark';
@@ -1048,9 +1045,6 @@ Chart.defaults.font.size = 11;
 /* ══════════════════════════════════════════════
    AUTH
 ══════════════════════════════════════════════ */
-document.getElementById('btn-login').addEventListener('click', doLogin);
-document.getElementById('p').addEventListener('keypress', e => { if(e.key==='Enter') doLogin(); });
-document.getElementById('btn-logout').addEventListener('click', doLogout);
 
 function doLogin() {
   const u = document.getElementById('u').value.trim();
@@ -1078,7 +1072,29 @@ function doLogout() {
 /* ══════════════════════════════════════════════
    BOOTSTRAP
 ══════════════════════════════════════════════ */
-document.addEventListener('DOMContentLoaded', fetchData);
+document.addEventListener('DOMContentLoaded', () => {
+  // Sync theme toggles
+  document.querySelectorAll('.theme-opt').forEach(el => {
+    el.classList.toggle('active', el.dataset.t === currentTheme);
+    el.addEventListener('click', () => applyTheme(el.dataset.t));
+  });
+  // Auth
+  document.getElementById('btn-login').addEventListener('click', doLogin);
+  document.getElementById('p').addEventListener('keypress', e => { if(e.key==='Enter') doLogin(); });
+  document.getElementById('btn-logout').addEventListener('click', doLogout);
+  // Tabs
+  document.querySelectorAll('.nav-tab').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.nav-tab').forEach(b => b.classList.remove('active'));
+      document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+      btn.classList.add('active');
+      document.getElementById('tab-' + btn.dataset.tab).classList.add('active');
+      if (dataReady) triggerTabRender(btn.dataset.tab);
+    });
+  });
+  // Start background data fetch
+  fetchData();
+});
 
 function bootDashboard() {
   const today = new Date();
@@ -1530,17 +1546,8 @@ function renderResource(){
 }
 
 /* ══════════════════════════════════════════════
-   TAB NAVIGATION
+   TAB NAVIGATION (wired up in DOMContentLoaded)
 ══════════════════════════════════════════════ */
-document.querySelectorAll('.nav-tab').forEach(btn=>{
-  btn.addEventListener('click',()=>{
-    document.querySelectorAll('.nav-tab').forEach(b=>b.classList.remove('active'));
-    document.querySelectorAll('.tab-panel').forEach(p=>p.classList.remove('active'));
-    btn.classList.add('active');
-    document.getElementById('tab-'+btn.dataset.tab).classList.add('active');
-    if(dataReady) triggerTabRender(btn.dataset.tab);
-  });
-});
 function triggerTabRender(t){
   if(t==='summary')  renderSummary();
   else if(t==='kpi') renderKPI();
